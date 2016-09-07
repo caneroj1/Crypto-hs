@@ -4,62 +4,48 @@
 module Lib
     ( toBase64
     , fromBase64
-    , sextets4
-    , sextets3
-    , sextets2
     ) where
 
-import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString as BS
 import Data.Word
+import Data.Char
 import Data.Bits
 import Data.Monoid
-import Internal.TupleUtils
+import Internal.Uncons
+import Data.Maybe
 import qualified Data.Vector as V
 
 newtype Base64Encoded =
   Base64Encoded {
     encoded :: BS.ByteString
-  } deriving (Monoid, Show)
+  } deriving (Monoid)
+
+instance Show Base64Encoded where
+  show (Base64Encoded bytes) = show bytes
 
 base64 :: V.Vector Char
 base64 =
   V.fromList "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
 
-uncons4 :: BS.ByteString -> Maybe (Char, Char, Char, Char, BS.ByteString)
-uncons4 bs = uncons3 bs >>= (\(h, hh, hhh, t) ->
-                              tupleConcat3 (h, hh, hhh) <$> BS.uncons t)
+encodeW8 :: Word8 -> Word8
+encodeW8 w = fromIntegral . ord $ base64 V.! fromIntegral w
 
-uncons3 :: BS.ByteString -> Maybe (Char, Char, Char, BS.ByteString)
-uncons3 bs = uncons2 bs >>= (\(h, hh, t) -> tupleConcat (h, hh) <$> BS.uncons t)
-
-uncons2 :: BS.ByteString -> Maybe (Char, Char, BS.ByteString)
-uncons2 bs = BS.uncons bs >>= (\(h, t) -> tupleCons h <$> BS.uncons t)
-
-mask3 :: Word8
-mask3 = 3
-
-mask15 :: Word8
-mask15 = 15 -- 00001111
-
-mask15Shifted :: Word8
-mask15Shifted = 15 `shift` 2
-
-mask63 :: Word8
-mask63 = 63 -- 00111111
+decodeW8 :: Word8 -> Word8
+decodeW8 w
+  | isPad w   = w
+  | otherwise = fromIntegral . fromJust $ V.findIndex (wChar ==) base64
+  where
+    wChar = chr $ fromIntegral w
+    isPad = (==) pad
 
 pad :: Word8
 pad = 61    -- '='
 
 decode4 :: Word8 -> Word8 -> Word8 -> Word8 -> BS.ByteString
 decode4 a b c d =
-  let f1 = a `shift` 2
-      f2 = b `shift` (-4)
-      f  = f1 .|. f2
-      s1 = b .&. mask15
-      s2 = s1 `shift` 4
-      s3 = (c .&. mask15Shifted) `shift` (-2)
-      s  = s2 .|. s3
-      t  = ((c .&. mask3) `shift` 6) .|. (d .&. mask63)
+  let f  = (a `shift` 2) .|. (b `shift` (-4))
+      s  = ((b .&. 15) `shift` 4) .|. ((c .&. 60) `shift` (-2))
+      t  = ((c .&. 3) `shift` 6) .|. (d .&. 63)
     in BS.pack [f, s, t]
 
 decode3 :: Word8 -> Word8 -> Word8 -> BS.ByteString
@@ -68,37 +54,35 @@ decode3 a b c = BS.take 2 $ decode4 a b c 0
 decode2 :: Word8 -> Word8 -> BS.ByteString
 decode2 a b = BS.take 1 $ decode4 a b 0 0
 
-sextets4 :: Word8 -> Word8 -> Word8 -> Base64Encoded
+sextets4 :: Word8 -> Word8 -> Word8 -> BS.ByteString
 sextets4 a b c =
-  let f1 = a .&. mask63 `shift` 2
+  let f1 = a .&. 63 `shift` 2
       fi = f1 `shift` (-2)
-      s1 = a .&. 3
-      s2 = b .&. 15  `shift` 4
-      s3 = s2 `shift` (-4)
-      se = s3 .|. s1 `shift` 4
-      t1 = b .&. 15
-      t2 = c .&. 3 `shift` 6
-      t3 = t2 `shift` (-6)
-      th = t3 .|. t1 `shift` 2
-      fo = c .&. mask63
-    in Base64Encoded $ BS.pack [fi, se, th, fo]
+      s1 = (b .&. 15  `shift` 4) `shift` (-4)
+      se = s1 .|. (a .&. 3) `shift` 4
+      t1 = (c .&. 3 `shift` 6) `shift` (-6)
+      th = t1 .|. ( b .&. 15) `shift` 2
+      fo = c .&. 63
+    in BS.map encodeW8 $ BS.pack [fi, se, th, fo]
 
-sextets3 :: Word8 -> Word8 -> Base64Encoded
-sextets3 a b = Base64Encoded (BS.take 3 bytes <> BS.singleton pad)
-  where (Base64Encoded bytes) = sextets4 a b 0
+sextets3 :: Word8 -> Word8 -> BS.ByteString
+sextets3 a b = BS.take 3 bytes <> BS.singleton pad
+  where bytes = sextets4 a b 0
 
-sextets2 :: Word8 -> Base64Encoded
-sextets2 a = Base64Encoded (BS.take 2 bytes <> BS.replicate 2 pad)
-  where (Base64Encoded bytes) = sextets4 a 0 0
+sextets2 :: Word8 -> BS.ByteString
+sextets2 a = BS.take 2 bytes <> BS.replicate 2 pad
+  where bytes = sextets4 a 0 0
 
 toBase64 :: BS.ByteString -> Base64Encoded
-toBase64 (uncons3   -> Just (h, hh, hhh, t)) = sextets4 h hh hhh <> toBase64 t
-toBase64 (uncons2   -> Just (h, hh, t))      = sextets3 h hh     <> toBase64 t
-toBase64 (BS.uncons -> Just (h, t))          = sextets2 h        <> toBase64 t
-toBase64 _                                   = Base64Encoded BS.empty
+toBase64 = Base64Encoded . encode
+  where
+    encode (uncons3   -> Just (h, hh, hhh, t)) = sextets4 h hh hhh <> encode t
+    encode (uncons2   -> Just (h, hh, t))      = sextets3 h hh     <> encode t
+    encode (BS.uncons -> Just (h, t))          = sextets2 h        <> encode t
+    encode _                                   = BS.empty
 
 fromBase64 :: Base64Encoded -> BS.ByteString
-fromBase64 (Base64Encoded bytes) = decode bytes
+fromBase64 (Base64Encoded bytes) = decode $ BS.map decodeW8 bytes
   where
     decode (uncons4 -> Just (h, hh, hhh, hhhh, t))
       | hhhh == pad && hhh == pad  = decode2 h hh          <> decode t
