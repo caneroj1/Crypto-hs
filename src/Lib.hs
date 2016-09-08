@@ -4,6 +4,9 @@
 module Lib
     ( toBase64
     , fromBase64
+    , encodeW8
+    , decodeW8
+    , decode4
     ) where
 
 import qualified Data.ByteString as BS
@@ -31,15 +34,15 @@ encodeW8 :: Word8 -> Word8
 encodeW8 w = fromIntegral . ord $ base64 V.! fromIntegral w
 
 decodeW8 :: Word8 -> Word8
-decodeW8 w
-  | isPad w   = w
-  | otherwise = fromIntegral . fromJust $ V.findIndex (wChar ==) base64
+decodeW8 w = fromIntegral . fromJust $ V.findIndex (wChar ==) base64
   where
     wChar = chr $ fromIntegral w
-    isPad = (==) pad
 
 pad :: Word8
 pad = 61    -- '='
+
+ePad :: Word8
+ePad = 64
 
 decode4 :: Word8 -> Word8 -> Word8 -> Word8 -> BS.ByteString
 decode4 a b c d =
@@ -85,7 +88,7 @@ fromBase64 :: Base64Encoded -> BS.ByteString
 fromBase64 (Base64Encoded bytes) = decode $ BS.map decodeW8 bytes
   where
     decode (uncons4 -> Just (h, hh, hhh, hhhh, t))
-      | hhhh == pad && hhh == pad  = decode2 h hh          <> decode t
-      | hhhh == pad                = decode3 h hh hhh      <> decode t
-      | otherwise                  = decode4 h hh hhh hhhh <> decode t
+      | hhhh == ePad && hhh == ePad = decode2 h hh          <> decode t
+      | hhhh == ePad                = decode3 h hh hhh      <> decode t
+      | otherwise                   = decode4 h hh hhh hhhh <> decode t
     decode _ = BS.empty
