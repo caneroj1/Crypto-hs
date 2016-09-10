@@ -3,3 +3,4 @@ module Lib
     ) where
 
 import Internal.Base64 as X
+import Internal.BitOps as X

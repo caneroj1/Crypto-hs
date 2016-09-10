@@ -5,6 +5,8 @@ module Main where
 import Lib
 import qualified Data.ByteString as BS
 import Data.Monoid
+import Data.HexString
+import Data.Maybe
 
 -- from the wikipedia page on Base64
 text :: BS.ByteString
@@ -29,5 +31,18 @@ check text encoding = do
   print decoded
   print $ decoded == text
 
+hexToBytes :: BS.ByteString -> BS.ByteString
+hexToBytes = toBytes . hexString
+
+testXOR :: IO ()
+testXOR =
+  let inputBytes  = hexToBytes "1c0111001f010100061a024b53535009181c"
+      xorBytes    = hexToBytes "686974207468652062756c6c277320657965"
+      targetBytes = hexToBytes "746865206b696420646f6e277420706c6179"
+      result = targetBytes == fromJust (fixedXOR inputBytes xorBytes)
+    in
+      print result
+
+
 main :: IO ()
-main = check text encoded
+main = check text encoded >> testXOR
