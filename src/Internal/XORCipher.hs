@@ -14,7 +14,6 @@ import Data.Word
 import Data.Bits
 import Data.Maybe
 import Data.Ord
-import Data.Unique
 
 class Bytes a where
   getBytes :: a -> [Word8]
