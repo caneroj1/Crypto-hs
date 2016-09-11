@@ -1,14 +1,14 @@
 name:                Crypto
 version:             0.1.0.0
-synopsis:            Initial project template from stack
-description:         Please see README.md
-homepage:            https://github.com/caneroj1/Crypto#readme
+synopsis:            Solutions to http://cryptopals.com
+description:         Solutions to http://cryptopals.com
+homepage:            https://github.com/caneroj1/Crypto-hs
 license:             BSD3
 license-file:        LICENSE
 author:              Joe Canero
 maintainer:          jmc41493@gmail.com
 copyright:           Copyright: (c) 2016 Joe Canero
-category:            Web
+category:            Data
 build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
@@ -16,12 +16,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-  other-modules:       Internal.TupleUtils
-                     , Internal.Uncons
-                     , Internal.Base64
+  other-modules:       Internal.Base64
                      , Internal.BitOps
-                     , Internal.XORCipher
                      , Internal.Conversions
+                     , Internal.TupleUtils
+                     , Internal.Uncons
+                     , Internal.XORCipher
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , vector
@@ -33,11 +33,17 @@ library
 
 executable Crypto-exe
   hs-source-dirs:      app
+  other-modules:       Challenge
+                     , Challenges.Challenge1
+                     , Challenges.Challenge2
+                     , Challenges.Challenge3
+                     , Challenges.Types.Solveable
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , bytestring
                      , hexstring
+                     , mtl
                      , Crypto
   default-language:    Haskell2010
 

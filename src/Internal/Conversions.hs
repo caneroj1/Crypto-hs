@@ -2,6 +2,7 @@ module Internal.Conversions
 (
   textToByteString
 , hexTextToByteString
+, hexToBytes
 ) where
 
 import Data.HexString (toText, HexString, hexString, toBytes)
@@ -16,3 +17,6 @@ textToByteString = BS.pack . map (fromIntegral . ord) . Text.unpack
 
 hexTextToByteString :: Text -> ByteString
 hexTextToByteString = toBytes . hexString . textToByteString
+
+hexToBytes :: ByteString -> ByteString
+hexToBytes = toBytes . hexString
