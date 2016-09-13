@@ -11,12 +11,14 @@ import Challenges.Challenge1
 import Challenges.Challenge2
 import Challenges.Challenge3
 import Challenges.Challenge4
+import Challenges.Challenge5
 
 data Challenge =
   Challenge1 |
   Challenge2 |
   Challenge3 |
-  Challenge4
+  Challenge4 |
+  Challenge5
   deriving Read
 
 instance Solveable Challenge where
@@ -24,3 +26,4 @@ instance Solveable Challenge where
   solve Challenge2 = challenge2
   solve Challenge3 = challenge3
   solve Challenge4 = challenge4
+  solve Challenge5 = challenge5
