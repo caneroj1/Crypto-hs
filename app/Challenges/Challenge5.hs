@@ -10,7 +10,7 @@ import Data.Monoid
 import Data.Text
 import Data.ByteString (ByteString)
 
--- Challenge 3 is to break single-character XOR encryption
+-- Challenge 5 is to make a repeating-key XOR to encode a string
 input :: ByteString
 input = "Burning 'em, if you ain't quick and nimble\n" <>
         "I go crazy when I hear a cymbal"
