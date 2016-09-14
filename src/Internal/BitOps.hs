@@ -2,12 +2,15 @@ module Internal.BitOps
 (
   fixedXOR
 , repeatingKeyXOR
+, hamming
 ) where
 
 import qualified Data.ByteString as BS
 import Data.Bits
 import Internal.Uncons
 import Data.Monoid
+import Data.Word
+import Debug.Trace
 
 fixedXOR :: BS.ByteString -> BS.ByteString -> Maybe BS.ByteString
 fixedXOR bs1 bs2
@@ -20,3 +23,7 @@ repeatingKeyXOR k bs =
       unpackedBS   = BS.unpack bs
     in
       BS.pack $ zipWith xor repeatingKey unpackedBS
+
+hamming :: BS.ByteString -> BS.ByteString -> Int
+hamming bs1 bs2 =
+  sum $ zipWith ((.) popCount . xor) (BS.unpack bs1) (BS.unpack bs2)

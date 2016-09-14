@@ -3,6 +3,8 @@
 module Internal.XORCipher
 (
   breakCipher
+, Bytes(..)
+, Decipherable(..)
 ) where
 
 import Internal.BitOps
@@ -12,8 +14,9 @@ import Data.List
 import Control.Arrow ((&&&))
 import Data.Word
 import Data.Bits
-import Data.Maybe
 import Data.Ord
+import Data.Maybe
+import Internal.TupleUtils
 
 class Bytes a where
   getBytes :: a -> [Word8]
@@ -23,6 +26,15 @@ instance Bytes HexString where
 
 instance Bytes BS.ByteString where
   getBytes = BS.unpack
+
+class Decipherable a where
+  bytesToDecipher :: a -> BS.ByteString
+
+instance Decipherable HexString where
+  bytesToDecipher = toBytes
+
+instance Decipherable BS.ByteString where
+  bytesToDecipher = id
 
 trackBytes :: (Bytes a) => a -> [(Word8, Down Int)]
 trackBytes = sortBy (comparing snd)         .
@@ -52,13 +64,12 @@ maxToLookAt = 5
 rank :: BS.ByteString -> Double
 rank str = sum $ do
   (idx, (w8, Down freq)) <- take maxToLookAt . zip [0..] $ trackBytes str
-  [maybe deduct (rankingFunction idx freq) (elemIndex w8 mostFrequentLetters)]
+  [maybe (deduct idx) (rankingFunction idx freq) (elemIndex w8 mostFrequentLetters)]
   where
     rankingFunction idxInString frequency idxInFreqList =
-      fromIntegral frequency *
-      (fromIntegral (maxToLookAt - idxInString)              * 0.4 +
-       fromIntegral (numMostFrequentLetters - idxInFreqList) * 0.6)
-    deduct = -1.0
+      fromIntegral (maxToLookAt - idxInString)              * 0.3 +
+      fromIntegral (numMostFrequentLetters - idxInFreqList) * 0.7
+    deduct idx = fromIntegral (maxToLookAt - idx) * (-1.0)
 
 -- try a few different things here I guess.
 -- we have a list of a few of the most frequent characters in the english
@@ -70,18 +81,19 @@ rank str = sum $ do
 -- that that byte was one of the most frequent letters.
 -- for each of those letters, calculate what the cipher character must have been
 -- to make that character become the byte we're looking at (just a XOR op).
-breakCipher :: HexString -> [(BS.ByteString, Down Double)]
-breakCipher hex = take maxToLookAt           .
-                  uniqueSorted               .
-                  sortBy (comparing snd)     .
-                  map (id &&& (Down . rank)) .
-                  catMaybes $ do
-                    (byte, _) <- trackBytes hex
-                    c         <- mostFrequentLetters
-                    let buffer = asBuffer (BS.length bytestring) (byte `xor` c)
-                    [bytestring `fixedXOR` buffer]
-  where bytestring = toBytes hex
-        asBuffer l = BS.pack . replicate l
+breakCipher :: (Decipherable a, Bytes a) => a -> [(Word8, BS.ByteString, Down Double)]
+breakCipher d = take maxToLookAt       .
+                uniqueSorted           .
+                sortBy (comparing trd) .
+                map (flatten . (id &&& (Down . rank . snd))) $
+                do
+                  (byte, _) <- trackBytes d
+                  c         <- mostFrequentLetters
+                  let key    = byte `xor` c
+                  let buffer = asBuffer (BS.length bytestring) key
+                  [(key, fromJust $ bytestring `fixedXOR` buffer)]
+  where bytestring          = bytesToDecipher d
+        asBuffer l          = BS.pack . replicate l
 
 uniqueSorted :: (Eq a) => [a] -> [a]
 uniqueSorted = map head . group

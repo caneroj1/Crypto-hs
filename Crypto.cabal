@@ -22,6 +22,7 @@ library
                      , Internal.TupleUtils
                      , Internal.Uncons
                      , Internal.XORCipher
+                     , Internal.RepeatingXORCipher
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , vector
@@ -39,6 +40,7 @@ executable Crypto-exe
                      , Challenges.Challenge3
                      , Challenges.Challenge4
                      , Challenges.Challenge5
+                     , Challenges.Challenge6
                      , Challenges.Types.Solveable
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N

@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Challenges.Challenge4 where
 
 import Lib (breakCipher)
@@ -9,7 +7,6 @@ import Data.Maybe
 import System.Exit
 import System.IO (IOMode(ReadMode), openFile, Handle, hIsEOF)
 import qualified Data.ByteString as BS
-import Data.Ord
 import Control.Monad
 
 secondArg :: [String] -> Maybe String

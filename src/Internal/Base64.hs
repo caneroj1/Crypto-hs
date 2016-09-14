@@ -4,6 +4,7 @@
 module Internal.Base64
     ( toBase64
     , fromBase64
+    , alreadyEncoded
     ) where
 
 import qualified Data.ByteString as BS
@@ -89,3 +90,6 @@ fromBase64 (Base64Encoded bytes) = decode $ BS.map decodeW8 bytes
       | hhhh == ePad                = decode3 h hh hhh      <> decode t
       | otherwise                   = decode4 h hh hhh hhhh <> decode t
     decode _ = BS.empty
+
+alreadyEncoded :: BS.ByteString -> Base64Encoded
+alreadyEncoded = Base64Encoded

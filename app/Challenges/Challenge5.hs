@@ -4,10 +4,7 @@ module Challenges.Challenge5 where
 
 import Lib (repeatingKeyXOR)
 import Data.HexString
-import Control.Monad
-import Data.Ord
 import Data.Monoid
-import Data.Text
 import Data.ByteString (ByteString)
 
 -- Challenge 5 is to make a repeating-key XOR to encode a string

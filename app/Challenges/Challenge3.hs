@@ -14,5 +14,6 @@ input = hexString "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a3
 challenge3 :: IO ()
 challenge3 = do
   putStrLn $ "Input: " ++ show input
-  forM_ (breakCipher input) $ \(bs, Down score) ->
-    putStrLn $ "Decoded: " ++ show bs ++ ", Score: " ++ show score
+  forM_ (breakCipher input) $ \(c, bs, Down score) ->
+    putStrLn $ "Decoded: " ++ show bs ++ " with "
+                ++ show c ++ ", Score: " ++ show score
